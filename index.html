@@ -3,268 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Bank of Mongolia — IBAN Registry Generation</title>
+    <title>Mongolian IBAN Converter</title>
     <style>
-        /* Art Deco Custom Theme */
         :root {
-            --bg-color: #111612;      /* Deep obsidian green */
-            --panel-color: #1a221c;   /* Charcoal teal panel */
-            --gold-bright: #e5c158;   /* Metallic gold */
-            --gold-muted: #af9039;    /* Muted architectural gold */
-            --text-light: #f4f4f2;    /* Crisp ivory text */
-            --text-dark: #8c968f;     /* Subtle tracking text */
+            --bg-color: #0d1b2a;
+            --panel-bg: #1b263b;
+            --gold-primary: #e0a96d;
+            --gold-secondary: #9a7445;
+            --text-light: #f4f5f7;
+            --text-dim: #a3b1c6;
+            --border-glow: rgba(224, 169, 109, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cinzel', 'Playfair Display', 'Segoe UI', serif;
         }
 
         body {
             background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(13, 27, 42, 0.85), rgba(13, 27, 42, 0.95)),
+                radial-gradient(circle at 50% 50%, transparent 0%, var(--bg-color) 70%),
+                linear-gradient(30deg, var(--gold-secondary) 12%, transparent 12.5%, transparent 87%, var(--gold-secondary) 87.5%, var(--gold-secondary)),
+                linear-gradient(150deg, var(--gold-secondary) 12%, transparent 12.5%, transparent 87%, var(--gold-secondary) 87.5%, var(--gold-secondary)),
+                linear-gradient(30deg, var(--gold-secondary) 12%, transparent 12.5%, transparent 87%, var(--gold-secondary) 87.5%, var(--gold-secondary)),
+                linear-gradient(150deg, var(--gold-secondary) 12%, transparent 12.5%, transparent 87%, var(--gold-secondary) 87.5%, var(--gold-secondary)),
+                linear-gradient(60deg, rgba(154,116,69,0.1) 25%, transparent 25.5%, transparent 75%, rgba(154,116,69,0.1) 75.5%, rgba(154,116,69,0.1)),
+                linear-gradient(60deg, rgba(154,116,69,0.1) 25%, transparent 25.5%, transparent 75%, rgba(154,116,69,0.1) 75.5%, rgba(154,116,69,0.1));
+            background-size: 100% 100%, 100% 100%, 40px 70px, 40px 70px, 40px 70px, 40px 70px, 40px 70px, 40px 70px;
+            background-position: 0 0, 0 0, 0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px;
             color: var(--text-light);
-            font-family: 'Cinzel', 'Times New Roman', serif;
-            letter-spacing: 0.05em;
-            margin: 0;
-            padding: 0;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Architectural Frame container */
-        .deco-container {
-            width: 100%;
-            max-width: 650px;
-            background: var(--panel-color);
-            border: 3px double var(--gold-bright);
-            box-shadow: 0 0 30px rgba(229, 193, 88, 0.15);
             padding: 40px;
-            position: relative;
-            box-sizing: border-box;
         }
 
-        /* Decorative Geometric Art Deco Corners */
-        .deco-container::before {
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border: 3px double var(--gold-primary);
+            border-radius: 4px;
+            padding: 50px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(220,169,109,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before, .container::after {
             content: "";
             position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border: 1px solid var(--gold-muted);
-            pointer-events: none;
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--gold-primary);
+            z-index: 1;
         }
+        .container::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .container::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
 
         header {
             text-align: center;
             margin-bottom: 40px;
-            border-bottom: 2px solid var(--gold-muted);
+            border-bottom: 1px double var(--gold-secondary);
             padding-bottom: 20px;
         }
 
-        h1 {
-            font-size: 1.6rem;
+        header h1 {
+            font-size: 2rem;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            color: var(--gold-bright);
-            margin: 0 0 10px 0;
-            letter-spacing: 0.15em;
+            color: var(--gold-primary);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            margin-bottom: 10px;
         }
 
-        .subtitle {
-            font-size: 0.8rem;
+        header p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            color: var(--text-dark);
-            letter-spacing: 0.2em;
         }
 
-        /* Form Controls Setup */
         .form-row {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
         }
 
-        .field-group {
-            flex: 1;
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-group {
             display: flex;
             flex-direction: column;
         }
 
-        .field-group.narrow {
-            flex: 0 0 45%;
-        }
-
         label {
-            font-size: 0.75rem;
             text-transform: uppercase;
-            color: var(--gold-bright);
-            margin-bottom: 8px;
-            letter-spacing: 0.1em;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            color: var(--gold-primary);
+            margin-bottom: 10px;
+            font-weight: 600;
         }
 
         select, input {
-            background-color: #0d120e;
+            background-color: rgba(13, 27, 42, 0.8);
+            border: 1px solid var(--gold-secondary);
             color: var(--text-light);
-            border: 1px solid var(--gold-muted);
-            padding: 12px;
-            font-size: 0.95rem;
-            font-family: inherit;
+            padding: 15px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            border-radius: 0;
             outline: none;
             transition: all 0.3s ease;
         }
 
         select:focus, input:focus {
-            border-color: var(--gold-bright);
-            box-shadow: 0 0 8px rgba(229, 193, 88, 0.3);
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 10px var(--border-glow);
         }
 
-        select {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path fill='%23e5c158' d='M0 3l5 5 5-5z'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            padding-right: 40px;
+        select option {
+            background-color: var(--panel-bg);
+            color: var(--text-light);
         }
 
-        /* Account Output Box Area */
-        .output-panel {
-            margin-top: 40px;
-            border-top: 1px dashed var(--gold-muted);
-            padding-top: 30px;
+        .output-section {
+            background: rgba(13, 27, 42, 0.6);
+            border: 1px solid var(--gold-secondary);
+            padding: 30px;
+            position: relative;
             text-align: center;
         }
 
-        .output-label {
+        .output-title {
             font-size: 0.8rem;
             text-transform: uppercase;
-            color: var(--text-dark);
-            margin-bottom: 12px;
-            letter-spacing: 0.2em;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            margin-bottom: 15px;
         }
 
-        .iban-display-container {
-            background: #0d120e;
-            border: 1px solid var(--gold-muted);
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 20px;
-            position: relative;
-        }
-
-        .iban-text {
+        .iban-display {
             font-family: 'Courier New', Courier, monospace;
+            font-size: 1.8rem;
             font-weight: bold;
-            font-size: 1.4rem;
-            letter-spacing: 0.15em;
-            color: var(--gold-bright);
-            text-shadow: 0 0 5px rgba(229, 193, 88, 0.2);
+            letter-spacing: 4px;
+            color: var(--text-light);
+            min-height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: color 0.3s ease;
         }
 
+        .iban-display.active {
+            color: var(--gold-primary);
+            text-shadow: 0 0 8px rgba(224, 169, 109, 0.4);
+        }
+
+        .iban-segment {
+            margin: 0 6px;
+        }
+        
         .placeholder-text {
-            color: #4a544d;
+            font-family: inherit;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            color: var(--text-dim);
             font-style: italic;
-            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
 
-    <div class="deco-container">
+    <div class="container">
         <header>
-            <h1>Interbank Payment Gateway</h1>
-            <div class="subtitle">Mongolia Unified IBAN Registry</div>
+            <h1>IBAN Converter Tool</h1>
+            <p>Generate Mongolian International Bank Account Numbers</p>
         </header>
 
         <div class="form-row">
-            <!-- Dropdown Menu of Mongolian Banks -->
-            <div class="field-group narrow">
+            <div class="input-group">
                 <label for="bankSelect">Select Institution</label>
-                <select id="bankSelect" onchange="updateIBAN()">
-                    <option value="" selected disabled>— Select Bank —</option>
-                    <option value="0500">Khan Bank (0500)</option>
-                    <option value="0400">Trade & Dev Bank (0400)</option>
-                    <option value="1500">Golomt Bank (1500)</option>
-                    <option value="3200">XacBank (3200)</option>
-                    <option value="3400">State Bank (3400)</option>
-                    <option value="3800">Bogd Bank (3800)</option>
-                    <option value="3900">M Bank (3900)</option>
-                    <option value="2100">Arig Bank (2100)</option>
-                    <option value="1900">TransBank (1900)</option>
-                    <option value="3000">Capitron Bank (3000)</option>
-                    <option value="3300">Chinggis Khaan Bank (3300)</option>
-                    <option value="3600">Development Bank (3600)</option>
-                    <option value="0100">Mongolbank Central (0100)</option>
+                <select id="bankSelect">
+                    <option value="" selected disabled hidden>Choose a bank...</option>
+                    <option value="0005">Khan Bank [0005]</option>
+                    <option value="0004">Trade and Development Bank (TDB) [0004]</option>
+                    <option value="0015">Golomt Bank [0015]</option>
+                    <option value="0032">XacBank [0032]</option>
+                    <option value="0034">State Bank [0034]</option>
+                    <option value="0038">Bogd Bank [0038]</option>
+                    <option value="0039">M Bank [0039]</option>
+                    <option value="0021">Arig Bank [0021]</option>
+                    <option value="0019">TransBank [0019]</option>
+                    <option value="0030">Capitron Bank [0030]</option>
+                    <option value="0033">Chinggis Khaan Bank [0033]</option>
+                    <option value="0036">Development Bank of Mongolia [0036]</option>
                 </select>
             </div>
 
-            <!-- Legacy Account Field -->
-            <div class="field-group">
-                <label for="legacyAccount">Pre-IBAN Account Number</label>
-                <input type="text" id="legacyAccount" placeholder="Up to 12 digits" maxlength="12" oninput="validateAndFormat(this); updateIBAN();">
+            <div class="input-group">
+                <label for="accountInput">Legacy Account Number</label>
+                <input type="text" id="accountInput" placeholder="e.g. 50505050505" autocomplete="off">
             </div>
         </div>
 
-        <!-- Live Updating IBAN Output Display -->
-        <div class="output-panel">
-            <div class="output-label">Calculated IBAN Assignment</div>
-            <div class="iban-display-container">
-                <div id="ibanOutput" class="placeholder-text">Awaiting selection or manual parameters...</div>
+        <div class="output-section">
+            <div class="output-title">Generated International Bank Account Number (IBAN)</div>
+            <div id="ibanDisplay" class="iban-display">
+                <span class="placeholder-text">Select a bank and enter an account number...</span>
             </div>
         </div>
     </div>
 
     <script>
-        // Restricts manual inputs strictly to positive numeric systems
-        function validateAndFormat(input) {
-            input.value = input.value.replace(/[^0-9]/g, '');
-        }
+        const bankSelect = document.getElementById('bankSelect');
+        const accountInput = document.getElementById('accountInput');
+        const ibanDisplay = document.getElementById('ibanDisplay');
 
-        // Calculates check digits according to ISO-13616 Modulo-97 parameters
-        function calculateCheckDigits(bankCode, numericAccount) {
-            // MN is translated to numbers: M=22, N=23. Country tag 'MN00' becomes '222300' appended to tail.
-            const bbanStr = bankCode + numericAccount;
-            const fullNumericString = bbanStr + "222300";
+        accountInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+            generateIBAN();
+        });
 
-            // Process via Mod-97 pieces due to JavaScript integer limits 
-            let remainder = 0;
-            for (let i = 0; i < fullNumericString.length; i++) {
-                remainder = (remainder * 10 + parseInt(fullNumericString.charAt(i), 10)) % 97;
-            }
+        bankSelect.addEventListener('change', generateIBAN);
 
-            let checkDigits = 98 - remainder;
-            return checkDigits < 10 ? "0" + checkDigits : checkDigits.toString();
-        }
-
-        function updateIBAN() {
-            const bankSelect = document.getElementById("bankSelect");
-            const legacyInput = document.getElementById("legacyAccount");
-            const outputElement = document.getElementById("ibanOutput");
-
+        function generateIBAN() {
             const bankCode = bankSelect.value;
-            const legacyAccount = legacyInput.value.trim();
+            const rawAccount = accountInput.value.trim();
 
-            // Condition 1: Absolutely everything empty
-            if (!bankCode && !legacyAccount) {
-                outputElement.innerHTML = "Awaiting selection or manual parameters...";
-                outputElement.className = "placeholder-text";
+            if (!bankCode && !rawAccount) {
+                ibanDisplay.classList.remove('active');
+                ibanDisplay.innerHTML = '<span class="placeholder-text">Select a bank and enter an account number...</span>';
                 return;
             }
 
-            // Condition 2: Bank selected, but individual ledger input is incomplete
-            if (bankCode && legacyAccount.length < 1) {
-                outputElement.innerHTML = `MNxx — ${bankCode} — xxxx xxxx xxxx`;
-                outputElement.className = "iban-text";
+            if (bankCode && !rawAccount) {
+                ibanDisplay.classList.add('active');
+                ibanDisplay.innerHTML = `
+                    <span class="iban-segment">MNXX</span>
+                    <span class="iban-segment">${bankCode}</span>
+                    <span class="iban-segment">XXXX</span>
+                    <span class="iban-segment">XXXX</span>
+                    <span class="iban-segment">XXXX</span>
+                `;
                 return;
             }
 
-            // Condition 3: Process the active elements dynamically
-            if (bankCode && legacyAccount.length > 0) {
-                // Left padding with zeros up to 12 character positions
-                const paddedAccount = legacyAccount.padStart(12, '0');
-                const calculatedCheck = calculateCheckDigits(bankCode, paddedAccount);
-                const completeIBAN = `MN${calculatedCheck}${bankCode}${paddedAccount}`;
+            ibanDisplay.classList.add('active');
+            
+            const paddedAccount = rawAccount.padStart(12, '0');
+            const countryCode = "MN";
+            const checkDigits = calculateMod97CheckDigits(countryCode, bankCode, paddedAccount);
+            const fullIban = `${countryCode}${checkDigits}${bankCode}${paddedAccount}`;
+            
+            const chunk1 = fullIban.substring(0, 4);
+            const chunk2 = fullIban.substring(4, 8);
+            const chunk3 = fullIban.substring(8, 12);
+            const chunk4 = fullIban.substring(12, 16);
+            const chunk5 = fullIban.substring(16, 20);
 
-                // Inject structured output back to UI screen split into 4-char chunks
-                outputElement.innerHTML = completeIBAN.match(/.{1,4}/g).join(' ');
-                outputElement.className = "iban-text";
+            ibanDisplay.innerHTML = `
+                <span class="iban-segment">${chunk1}</span>
+                <span class="iban-segment">${chunk2}</span>
+                <span class="iban-segment">${chunk3}</span>
+                <span class="iban-segment">${chunk4}</span>
+                <span class="iban-segment">${chunk5}</span>
+            `;
+        }
+
+        function calculateMod97CheckDigits(country, bank, account) {
+            const rearrangedString = `${bank}${account}222300`;
+            
+            let remainder = 0;
+            for (let i = 0; i < rearrangedString.length; i += 7) {
+                const chunk = remainder.toString() + rearrangedString.substring(i, Math.min(i + 7, rearrangedString.length));
+                remainder = parseInt(chunk, 10) % 97;
             }
+            
+            const checkValue = 98 - remainder;
+            return checkValue.toString().padStart(2, '0');
         }
     </script>
 </body>
