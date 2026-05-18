@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,6 +41,7 @@
             justify-content: center;
             align-items: center;
             padding: 40px;
+            position: relative;
         }
 
         .container {
@@ -183,55 +184,137 @@
             color: var(--text-dim);
             font-style: italic;
         }
+
+        /* Language Toggle Styling */
+        .lang-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: var(--gold-primary);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-decoration: underline;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 600;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, color 0.2s ease;
+            z-index: 10;
+        }
+
+        .lang-toggle:hover {
+            opacity: 1;
+            color: var(--text-light);
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1>IBAN Converter Tool</h1>
-            <p>Generate Mongolian International Bank Account Numbers</p>
+            <h1 id="mainTitle">IBAN Хөрвүүлэгч</h1>
+            <p id="subTitle">Монгол Улсын Олон Улсын Банкны Дансны Дугаар Үүсгэгч</p>
         </header>
 
         <div class="form-row">
             <div class="input-group">
-                <label for="bankSelect">Select Institution</label>
+                <label id="labelBank" for="bankSelect">Санхүүгийн байгууллага сонгох</label>
                 <select id="bankSelect">
-                    <option value="" selected disabled hidden>Choose a bank...</option>
-                    <option value="0005">Khan Bank [0005]</option>
-                    <option value="0004">Trade and Development Bank (TDB) [0004]</option>
-                    <option value="0015">Golomt Bank [0015]</option>
-                    <option value="0032">XacBank [0032]</option>
-                    <option value="0034">State Bank [0034]</option>
-                    <option value="0038">Bogd Bank [0038]</option>
-                    <option value="0039">M Bank [0039]</option>
-                    <option value="0021">Arig Bank [0021]</option>
-                    <option value="0019">TransBank [0019]</option>
-                    <option value="0030">Capitron Bank [0030]</option>
-                    <option value="0033">Chinggis Khaan Bank [0033]</option>
-                    <option value="0036">Development Bank of Mongolia [0036]</option>
+                    <option id="optPlaceholder" value="" selected disabled hidden>Банк сонгоно уу...</option>
+                    <option value="0005">Хаан Банк [0005]</option>
+                    <option value="0004">Худалдаа Хөгжлийн Банк (ХХБ) [0004]</option>
+                    <option value="0015">Голомт Банк [0015]</option>
+                    <option value="0032">ХасБанк [0032]</option>
+                    <option value="0034">Төрийн Банк [0034]</option>
+                    <option value="0038">Богд Банк [0038]</option>
+                    <option value="0039">М Банк [0039]</option>
+                    <option value="0021">Ариг Банк [0021]</option>
+                    <option value="0019">ТрансБанк [0019]</option>
+                    <option value="0030">Капитрон Банк [0030]</option>
+                    <option value="0033">Чингис Хаан Банк [0033]</option>
+                    <option value="0036">Монгол Улсын Хөгжлийн Банк [0036]</option>
                 </select>
             </div>
 
             <div class="input-group">
-                <label for="accountInput">Legacy Account Number</label>
-                <input type="text" id="accountInput" placeholder="e.g. 555555555" autocomplete="off">
+                <label id="labelAccount" for="accountInput">Хуучин дансны дугаар</label>
+                <input type="text" id="accountInput" placeholder="Жишээ нь: 555555555" autocomplete="off">
             </div>
         </div>
 
         <div class="output-section">
-            <div class="output-title">Generated International Bank Account Number (IBAN)</div>
+            <div id="outputTitle" class="output-title">Үүсгэсэн Олон Улсын Банкны Дансны Дугаар (IBAN)</div>
             <div id="ibanDisplay" class="iban-display">
-                <span class="placeholder-text">Select a bank and enter an account number...</span>
+                <span class="placeholder-text" id="placeholderMsg">Банк сонгож, дансны дугаараа оруулна уу...</span>
             </div>
         </div>
     </div>
 
+    <!-- Language Toggle Button -->
+    <button id="langBtn" class="lang-toggle">EN</button>
+
     <script>
+        // Localization Packages
+        const translations = {
+            mn: {
+                mainTitle: "IBAN Хөрвүүлэгч",
+                subTitle: "Монгол Улсын Олон Улсын Банкны Дансны Дугаар Үүсгэгч",
+                labelBank: "Санхүүгийн байгууллага сонгох",
+                optPlaceholder: "Банк сонгоно уу...",
+                labelAccount: "Хуучин дансны дугаар",
+                accountPlaceholder: "Жишээ нь: 555555555",
+                outputTitle: "Үүсгэсэн Олон Улсын Банкны Дансны Дугаар (IBAN)",
+                placeholderMsg: "Банк сонгож, дансны дугаараа оруулна уу..."
+            },
+            en: {
+                mainTitle: "IBAN Converter Tool",
+                subTitle: "Generate Mongolian International Bank Account Numbers",
+                labelBank: "Select Institution",
+                optPlaceholder: "Choose a bank...",
+                labelAccount: "Legacy Account Number",
+                accountPlaceholder: "e.g. 555555555",
+                outputTitle: "Generated International Bank Account Number (IBAN)",
+                placeholderMsg: "Select a bank and enter an account number..."
+            }
+        };
+
+        let currentLang = "mn";
+
         const bankSelect = document.getElementById('bankSelect');
         const accountInput = document.getElementById('accountInput');
         const ibanDisplay = document.getElementById('ibanDisplay');
+        const langBtn = document.getElementById('langBtn');
 
+        // Dynamic Elements
+        const mainTitle = document.getElementById('mainTitle');
+        const subTitle = document.getElementById('subTitle');
+        const labelBank = document.getElementById('labelBank');
+        const optPlaceholder = document.getElementById('optPlaceholder');
+        const labelAccount = document.getElementById('labelAccount');
+        const outputTitle = document.getElementById('outputTitle');
+
+        // Language Switch Logic
+        langBtn.addEventListener('click', () => {
+            currentLang = currentLang === "mn" ? "en" : "mn";
+            langBtn.textContent = currentLang === "mn" ? "EN" : "MON";
+            document.documentElement.lang = currentLang;
+            
+            // Apply text translations
+            mainTitle.textContent = translations[currentLang].mainTitle;
+            subTitle.textContent = translations[currentLang].subTitle;
+            labelBank.textContent = translations[currentLang].labelBank;
+            optPlaceholder.textContent = translations[currentLang].optPlaceholder;
+            labelAccount.textContent = translations[currentLang].labelAccount;
+            accountInput.placeholder = translations[currentLang].accountPlaceholder;
+            outputTitle.textContent = translations[currentLang].outputTitle;
+
+            // Refresh display area string state
+            generateIBAN();
+        });
+
+        // Numeric parsing & update validation
         accountInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/\D/g, '');
             generateIBAN();
@@ -245,7 +328,7 @@
 
             if (!bankCode && !rawAccount) {
                 ibanDisplay.classList.remove('active');
-                ibanDisplay.innerHTML = '<span class="placeholder-text">Select a bank and enter an account number...</span>';
+                ibanDisplay.innerHTML = `<span class="placeholder-text">${translations[currentLang].placeholderMsg}</span>`;
                 return;
             }
 
