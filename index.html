@@ -1,153 +1,643 @@
-import tkinter as tk
-from tkinter import ttk
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IBAN Generation Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
 
-# Bank data derived from Bank of Mongolia definitions
-# Format: "Display Name": "4-digit Bank Identifier used in IBAN"
-BANKS = {
-    "Khan Bank": "0005",
-    "Trade and Development Bank (TDB)": "0004",
-    "Golomt Bank": "0015",
-    "XacBank": "0032",
-    "State Bank": "0034",
-    "Bogd Bank": "0038",
-    "M Bank": "0039",
-    "Arig Bank": "0021",
-    "TransBank": "0019",
-    "Capitron Bank": "0030",
-    "Chinggis Khaan Bank": "0033",
-    "Development Bank of Mongolia": "0036",
-    "Mongolbank (Central Bank)": "0001"
-}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-def calculate_iban_check_digits(bank_code, account_padded):
-    """
-    Calculates the 2-digit MOD-97 check digits for a Mongolian IBAN.
-    Structure for calculation: [BankCode][Account] + [M=22][N=23] + [00]
-    """
-    # 2223 is the numeric representation of 'MN' (M=22, N=23)
-    rearranged = f"{bank_code}{account_padded}222300"
-    
-    # MOD 97 logic: Check Digits = 98 - (Rearranged_Numeric % 97)
-    remainder = int(rearranged) % 97
-    check_digits = 98 - remainder
-    
-    # Return as a zero-padded 2-digit string
-    return f"{check_digits:02d}"
+    :root {
+      --gold:        #c9a84c;
+      --gold-light:  #e8d5a3;
+      --gold-dim:    #8a6e2f;
+      --navy-deep:   #06101c;
+      --navy:        #0e1a2b;
+      --navy-mid:    #0a1420;
+      --navy-panel:  #07111d;
+      --navy-border: #1e3047;
+      --steel:       #8ea8c3;
+      --steel-dim:   #4a6680;
+      --steel-faint: #2a3d52;
+      --green-ok:    #5a9e6f;
+    }
 
-def update_iban(*args):
-    selected_bank = bank_var.get()
-    account_input = account_var.get().strip()
-    
-    # If no bank is selected, clear everything
-    if not selected_bank or selected_bank == "Select a Bank...":
-        result_label.config(text="")
-        info_label.config(text="Please select a financial institution.", fg="#7f8c8d")
-        return
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--navy-deep);
+      color: var(--gold-light);
+      font-family: 'Cormorant Garamond', serif;
+      overflow-x: hidden;
+    }
 
-    bank_code = BANKS[selected_bank]
-    
-    # Strip any spaces or accidental non-numeric characters from the input
-    clean_account = "".join(filter(str.isdigit, account_input))
-    
-    if not clean_account:
-        # Scenario A: Bank selected but no account number typed yet
-        # Shows bank-specific structural information placeholder
-        result_label.config(text="")
-        info_label.config(
-            text=f"Bank Identifier: {bank_code}  |  Awaiting account number...", 
-            fg="#d35400"
-        )
-    else:
-        # Pad account number to exactly 12 digits with leading zeros
-        padded_account = clean_account.zfill(12)
-        
-        # Calculate secure ISO 13616 compliant check digits
-        check_digits = calculate_iban_check_digits(bank_code, padded_account)
-        
-        # Assemble standard 20-character IBAN
-        full_iban = f"MN{check_digits}{bank_code}{padded_account}"
-        
-        # Pretty-print formatting (Groups of 4 for financial legibility)
-        formatted_iban = " ".join(full_iban[i:i+4] for i in range(0, len(full_iban), 4))
-        
-        result_label.config(text=formatted_iban)
-        info_label.config(text="✓ Valid Mongolian IBAN structure generated.", fg="#27ae60")
+    /* ─── Page layout ───────────────────────────── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+    }
 
-# --- UI Setup ---
-root = tk.Tk()
-root.title("Bank of Mongolia — Interbank IBAN Utility")
-root.geometry("620x340")
-root.configure(bg="#0f1e36") # Corporate navy/midnight blue background
-root.resizable(False, False)
+    /* ─── Tiled background pattern ──────────────── */
+    .page::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg,   transparent, transparent 59px, #c9a84c0a 60px),
+        repeating-linear-gradient(90deg,  transparent, transparent 59px, #c9a84c0a 60px);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-# Custom Styling
-style = ttk.Style()
-style.theme_use('clam')
-style.configure("TCombobox", 
-                fieldbackground="#ffffff", 
-                background="#dcdde1", 
-                foreground="#2c3e50",
-                font=("Helvetica", 11))
+    /* ─── Top stripe ────────────────────────────── */
+    .top-stripe {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 7px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--gold)       0px,  var(--gold)       18px,
+        var(--navy-deep)  18px, var(--navy-deep)   22px,
+        var(--gold)       22px, var(--gold)        28px,
+        var(--gold-light) 28px, var(--gold-light)  32px,
+        var(--navy-deep)  32px, var(--navy-deep)   36px
+      );
+      z-index: 100;
+    }
+    .bottom-stripe {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 7px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--gold)       0px,  var(--gold)       18px,
+        var(--navy-deep)  18px, var(--navy-deep)   22px,
+        var(--gold)       22px, var(--gold)        28px,
+        var(--gold-light) 28px, var(--gold-light)  32px,
+        var(--navy-deep)  32px, var(--navy-deep)   36px
+      );
+      z-index: 100;
+    }
 
-# Top Banner Header
-header_frame = tk.Frame(root, bg="#0a1526", height=60)
-header_frame.pack(fill="x", side="top")
-header_label = tk.Label(
-    header_frame, 
-    text="MONGOLIAN IBAN GENERATION PORTAL", 
-    font=("Helvetica", 13, "bold"), 
-    fg="#f1c40f", # Gold text
-    bg="#0a1526"
-)
-header_label.pack(pady=15)
+    /* ─── Card ──────────────────────────────────── */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 780px;
+      background: var(--navy);
+      border: 1px solid #c9a84c33;
+      border-radius: 2px;
+      overflow: hidden;
+      animation: fadeUp 0.6s ease both;
+    }
 
-# Main Container Form
-form_frame = tk.Frame(root, bg="#0f1e36", padx=30, pady=20)
-form_frame.pack(fill="both", expand=True)
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-# Dropdown Selection
-lbl_bank = tk.Label(form_frame, text="Select Institution:", font=("Helvetica", 10, "bold"), fg="#ffffff", bg="#0f1e36")
-lbl_bank.grid(row=0, column=0, sticky="w", pady=(0, 5))
+    /* ─── Outer decorative frame inside card ────── */
+    .card-inner {
+      margin: 20px;
+      border: 1px solid #c9a84c2a;
+      padding: 36px 44px 40px;
+      position: relative;
+    }
 
-bank_var = tk.StringVar()
-bank_dropdown = ttk.Combobox(form_frame, textvariable=bank_var, width=32, state="readonly")
-bank_dropdown['values'] = ["Select a Bank..."] + list(BANKS.keys())
-bank_dropdown.current(0)
-bank_dropdown.grid(row=1, column=0, padx=(0, 20), sticky="w")
-bank_var.trace_add("write", update_iban)
+    /* ─── Corner ornaments (CSS-drawn) ─────────── */
+    .corner {
+      position: absolute;
+      width: 56px; height: 56px;
+      pointer-events: none;
+    }
+    .corner::before, .corner::after { content: ''; position: absolute; background: var(--gold); }
+    .corner.tl { top: -1px; left: -1px; }
+    .corner.tr { top: -1px; right: -1px; transform: scaleX(-1); }
+    .corner.bl { bottom: -1px; left: -1px; transform: scaleY(-1); }
+    .corner.br { bottom: -1px; right: -1px; transform: scale(-1); }
 
-# Account Input Textfield
-lbl_acc = tk.Label(form_frame, text="Pre-IBAN Account Number:", font=("Helvetica", 10, "bold"), fg="#ffffff", bg="#0f1e36")
-lbl_acc.grid(row=0, column=1, sticky="w", pady=(0, 5))
+    .corner::before { top: 0; left: 0; width: 2px; height: 40px; }
+    .corner::after  { top: 0; left: 0; width: 40px; height: 2px; }
 
-account_var = tk.StringVar()
-account_entry = tk.Entry(form_frame, textvariable=account_var, width=24, font=("Helvetica", 12), bg="#ffffff", fg="#2c3e50", bd=2, relief="groove")
-account_entry.grid(row=1, column=1, sticky="w")
-account_var.trace_add("write", update_iban)
+    .corner .inner-dot {
+      position: absolute;
+      top: 8px; left: 8px;
+      width: 5px; height: 5px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+    .corner .inner-line-v {
+      position: absolute;
+      top: 8px; left: 11px;
+      width: 1px; height: 20px;
+      background: #c9a84c55;
+    }
+    .corner .inner-line-h {
+      position: absolute;
+      top: 11px; left: 8px;
+      width: 20px; height: 1px;
+      background: #c9a84c55;
+    }
 
-# Separator rule
-separator = tk.Frame(form_frame, height=2, bd=1, relief="sunken", bg="#1b3052")
-separator.grid(row=2, column=0, columnspan=2, sticky="ew", pady=25)
+    /* ─── Header ────────────────────────────────── */
+    .header { text-align: center; margin-bottom: 34px; }
 
-# Dynamic Output Section
-lbl_output = tk.Label(form_frame, text="Official IBAN Registry Format:", font=("Helvetica", 9, "bold"), fg="#95a5a6", bg="#0f1e36")
-lbl_output.grid(row=3, column=0, columnspan=2, sticky="w")
+    .eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 0.35em;
+      color: var(--steel-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
 
-result_label = tk.Label(
-    form_frame, 
-    text="", 
-    font=("Courier New", 20, "bold"), 
-    fg="#f1c40f", # Crisp gold for readability
-    bg="#112544", 
-    relief="solid", 
-    bd=1, 
-    width=28, 
-    height=2
-)
-result_label.grid(row=4, column=0, columnspan=2, pady=(5, 5), sticky="ew")
+    .title {
+      font-family: 'Cinzel', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
 
-# Real-time status tracker
-info_label = tk.Label(form_frame, text="Please select a financial institution.", font=("Helvetica", 9, "italic"), fg="#7f8c8d", bg="#0f1e36")
-info_label.grid(row=5, column=0, columnspan=2, sticky="w", pady=(2, 0))
+    /* divider row */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 auto 10px;
+      max-width: 380px;
+    }
+    .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #c9a84c66, transparent); }
+    .divider-diamond {
+      width: 8px; height: 8px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+    .divider-dot {
+      width: 4px; height: 4px;
+      background: #c9a84c55;
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
 
-root.mainloop()
+    .tagline {
+      font-size: 13px;
+      font-style: italic;
+      color: var(--steel-dim);
+      letter-spacing: 0.07em;
+    }
+
+    /* ─── Form grid ─────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px 32px;
+      margin-bottom: 28px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 9px; }
+
+    .field-label {
+      font-family: 'Cinzel', serif;
+      font-size: 9.5px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--steel);
+    }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '';
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-60%) rotate(45deg);
+      width: 6px; height: 6px;
+      border-right: 1.5px solid var(--gold);
+      border-bottom: 1.5px solid var(--gold);
+      pointer-events: none;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      background: var(--navy-mid);
+      border: 1px solid #c9a84c55;
+      color: var(--gold-light);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+      padding: 11px 16px;
+      border-radius: 2px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--gold);
+      background: #0c1929;
+    }
+    select option { background: var(--navy-deep); color: var(--gold-light); }
+    input[type="text"]::placeholder { color: var(--steel-faint); }
+
+    /* ─── Output panel ──────────────────────────── */
+    .output-panel {
+      background: var(--navy-panel);
+      border: 1px solid #c9a84c33;
+      padding: 26px 28px 22px;
+      text-align: center;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .output-panel::before, .output-panel::after {
+      content: '';
+      position: absolute;
+      left: 20px; right: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #c9a84c44, transparent);
+    }
+    .output-panel::before { top: 0; }
+    .output-panel::after  { bottom: 0; }
+
+    .output-label {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--steel-dim);
+      margin-bottom: 14px;
+    }
+
+    .iban-display {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      transition: color 0.3s;
+    }
+    .iban-display.empty {
+      color: var(--steel-faint);
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      font-style: italic;
+      letter-spacing: 0.05em;
+      min-height: 20px;
+      transition: color 0.2s;
+    }
+    .status.ok   { color: var(--green-ok); }
+    .status.wait { color: #c9a84c88; }
+    .status.info { color: var(--steel-dim); }
+
+    .copy-btn {
+      display: none;
+      margin-top: 16px;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      background: transparent;
+      border: 1px solid #c9a84c55;
+      color: var(--gold);
+      padding: 9px 26px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover { background: #c9a84c14; border-color: var(--gold); }
+    .copy-btn.visible { display: inline-block; }
+
+    /* ─── Structure breakdown ───────────────────── */
+    .struct-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--navy-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .struct-cell {
+      padding: 10px 8px;
+      text-align: center;
+      border-right: 1px solid var(--navy-border);
+      transition: background 0.2s;
+    }
+    .struct-cell:last-child { border-right: none; }
+    .struct-cell.active { background: #0d1d2e; }
+
+    .struct-val {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #2a3d52;
+      letter-spacing: 0.06em;
+      transition: color 0.3s;
+    }
+    .struct-cell.active .struct-val { color: var(--gold); }
+
+    .struct-lbl {
+      font-size: 10px;
+      color: var(--steel-dim);
+      letter-spacing: 0.12em;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ─── Footer note ───────────────────────────── */
+    .footer-note {
+      text-align: center;
+      margin-top: 26px;
+      font-size: 11px;
+      font-style: italic;
+      color: #2a3d52;
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Responsive ────────────────────────────── */
+    @media (max-width: 580px) {
+      .card-inner { padding: 24px 18px 28px; margin: 14px; }
+      .form-grid  { grid-template-columns: 1fr; gap: 18px; }
+      .title      { font-size: 18px; }
+      .iban-display { font-size: 20px; }
+      .struct-grid { grid-template-columns: repeat(2, 1fr); }
+      .struct-cell:nth-child(2) { border-right: none; }
+      .struct-cell:nth-child(3) { border-top: 1px solid var(--navy-border); }
+      .corner { width: 38px; height: 38px; }
+      .corner::before { height: 26px; }
+      .corner::after  { width: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-stripe"></div>
+<div class="bottom-stripe"></div>
+
+<main class="page">
+  <div class="card">
+    <div class="card-inner">
+
+      <!-- Corner ornaments -->
+      <div class="corner tl"><div class="inner-dot"></div><div class="inner-line-v"></div><div class="inner-line-h"></div></div>
+      <div class="corner tr"><div class="inner-dot"></div><div class="inner-line-v"></div><div class="inner-line-h"></div></div>
+      <div class="corner bl"><div class="inner-dot"></div><div class="inner-line-v"></div><div class="inner-line-h"></div></div>
+      <div class="corner br"><div class="inner-dot"></div><div class="inner-line-v"></div><div class="inner-line-h"></div></div>
+
+      <!-- Header -->
+      <header class="header">
+        <p class="eyebrow">◆ &nbsp; Interbank Registry &nbsp; ◆</p>
+        <h1 class="title">IBAN Generation Portal</h1>
+        <div class="divider">
+          <div class="divider-line"></div>
+          <div class="divider-dot"></div>
+          <div class="divider-diamond"></div>
+          <div class="divider-dot"></div>
+          <div class="divider-line"></div>
+        </div>
+        <p class="tagline">ISO 13616 &nbsp;·&nbsp; MOD-97 Compliant &nbsp;·&nbsp; Mongolia</p>
+      </header>
+
+      <!-- Form -->
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label" for="bankSelect">Financial Institution</label>
+          <div class="select-wrap">
+            <select id="bankSelect">
+              <option value="">— Select Institution —</option>
+              <option value="0001">Mongolbank (Central Bank) · 0001</option>
+              <option value="0004">Trade and Development Bank (TDB) · 0004</option>
+              <option value="0005">Khan Bank · 0005</option>
+              <option value="0015">Golomt Bank · 0015</option>
+              <option value="0019">TransBank · 0019</option>
+              <option value="0021">Arig Bank · 0021</option>
+              <option value="0030">Capitron Bank · 0030</option>
+              <option value="0032">XacBank · 0032</option>
+              <option value="0033">Chinggis Khaan Bank · 0033</option>
+              <option value="0034">State Bank · 0034</option>
+              <option value="0036">Development Bank of Mongolia · 0036</option>
+              <option value="0038">Bogd Bank · 0038</option>
+              <option value="0039">M Bank · 0039</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="accountInput">Pre-IBAN Account Number</label>
+          <input
+            type="text"
+            id="accountInput"
+            inputmode="numeric"
+            placeholder="Up to 12 digits"
+            maxlength="16"
+          />
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="output-panel">
+        <p class="output-label">◆ &nbsp; Official IBAN Registry Format &nbsp; ◆</p>
+        <div class="iban-display empty" id="ibanDisplay">MN ·· ···· ···· ···· ····</div>
+        <p class="status info" id="statusMsg"></p>
+        <button class="copy-btn" id="copyBtn" onclick="copyIban()">⎘ &nbsp; Copy IBAN</button>
+      </div>
+
+      <!-- Structure breakdown -->
+      <div class="struct-grid">
+        <div class="struct-cell active" id="cell-cc">
+          <div class="struct-val">MN</div>
+          <div class="struct-lbl">Country code</div>
+        </div>
+        <div class="struct-cell" id="cell-cd">
+          <div class="struct-val" id="val-cd">··</div>
+          <div class="struct-lbl">Check digits</div>
+        </div>
+        <div class="struct-cell" id="cell-bk">
+          <div class="struct-val" id="val-bk">····</div>
+          <div class="struct-lbl">Bank code</div>
+        </div>
+        <div class="struct-cell" id="cell-ac">
+          <div class="struct-val" id="val-ac">············</div>
+          <div class="struct-lbl">Account number</div>
+        </div>
+      </div>
+
+      <p class="footer-note">
+        Check digits computed via ISO 13616 MOD-97 algorithm &nbsp;·&nbsp;
+        Account numbers padded to 12 digits
+      </p>
+
+    </div><!-- /.card-inner -->
+  </div><!-- /.card -->
+</main>
+
+<script>
+  // ── Data ──────────────────────────────────────────────────────────────────
+  const bankSelect   = document.getElementById('bankSelect');
+  const accountInput = document.getElementById('accountInput');
+  const ibanDisplay  = document.getElementById('ibanDisplay');
+  const statusMsg    = document.getElementById('statusMsg');
+  const copyBtn      = document.getElementById('copyBtn');
+
+  const cellCC = document.getElementById('cell-cc');
+  const cellCD = document.getElementById('cell-cd');
+  const cellBK = document.getElementById('cell-bk');
+  const cellAC = document.getElementById('cell-ac');
+  const valCD  = document.getElementById('val-cd');
+  const valBK  = document.getElementById('val-bk');
+  const valAC  = document.getElementById('val-ac');
+
+  let currentIban = '';
+
+  // ── MOD-97 check digit calculation ────────────────────────────────────────
+  //
+  // Per ISO 13616, the IBAN is rearranged before the check:
+  //   [BankCode][AccountPadded][CountryNumeric][00]
+  // where M = 22, N = 23  →  "MN" becomes "2223"
+  // Then:  check_digits = 98 - (rearranged % 97)
+  //
+  // We use BigInt because the numeric string is ~20 digits —
+  // beyond the safe integer range for regular JS Number.
+  //
+  function calcCheckDigits(bankCode, accountPadded) {
+    const rearranged = bankCode + accountPadded + '222300';
+    let remainder = BigInt(0);
+    for (const ch of rearranged) {
+      remainder = (remainder * 10n + BigInt(ch)) % 97n;
+    }
+    const cd = 98 - Number(remainder);
+    return String(cd).padStart(2, '0');
+  }
+
+  // ── Render helpers ────────────────────────────────────────────────────────
+  function setActive(cell, on) {
+    if (on) cell.classList.add('active');
+    else     cell.classList.remove('active');
+  }
+
+  function resetUI() {
+    ibanDisplay.textContent = 'MN ·· ···· ···· ···· ····';
+    ibanDisplay.className   = 'iban-display empty';
+    statusMsg.textContent   = '';
+    statusMsg.className     = 'status info';
+    copyBtn.classList.remove('visible');
+    valCD.textContent = '··';
+    valBK.textContent = '····';
+    valAC.textContent = '············';
+    setActive(cellCD, false);
+    setActive(cellBK, false);
+    setActive(cellAC, false);
+    currentIban = '';
+  }
+
+  // ── Main update function ──────────────────────────────────────────────────
+  function update() {
+    const bankCode   = bankSelect.value;
+    const rawAccount = accountInput.value.replace(/\D/g, '');
+
+    // Nothing selected yet
+    if (!bankCode) {
+      resetUI();
+      setActive(cellCC, false);
+      return;
+    }
+
+    setActive(cellCC, true);
+    setActive(cellBK, true);
+    valBK.textContent = bankCode;
+
+    // Bank selected but no account number yet
+    if (!rawAccount) {
+      ibanDisplay.textContent = 'MN ·· ' + bankCode + ' ···· ···· ····';
+      ibanDisplay.className   = 'iban-display empty';
+      statusMsg.textContent   = 'Awaiting account number…';
+      statusMsg.className     = 'status wait';
+      copyBtn.classList.remove('visible');
+      valCD.textContent = '··';
+      valAC.textContent = '············';
+      setActive(cellCD, false);
+      setActive(cellAC, false);
+      currentIban = '';
+      return;
+    }
+
+    // Pad to exactly 12 digits
+    const padded = rawAccount.padStart(12, '0').slice(-12);
+    const cd     = calcCheckDigits(bankCode, padded);
+    const full   = 'MN' + cd + bankCode + padded;
+
+    // Format as groups of 4 (standard IBAN presentation)
+    const groups = [];
+    for (let i = 0; i < full.length; i += 4) {
+      groups.push(full.slice(i, i + 4));
+    }
+
+    ibanDisplay.innerHTML = groups
+      .map(g => `<span style="display:inline-block">${g}</span>`)
+      .join(' ');
+    ibanDisplay.className = 'iban-display';
+
+    statusMsg.textContent = '✓ Valid Mongolian IBAN structure generated.';
+    statusMsg.className   = 'status ok';
+
+    valCD.textContent = cd;
+    valAC.textContent = padded;
+    setActive(cellCD, true);
+    setActive(cellAC, true);
+
+    copyBtn.classList.add('visible');
+    currentIban = full;
+  }
+
+  // ── Copy to clipboard ─────────────────────────────────────────────────────
+  function copyIban() {
+    if (!currentIban) return;
+    navigator.clipboard.writeText(currentIban).then(() => {
+      copyBtn.textContent = '✓  Copied to clipboard';
+      setTimeout(() => { copyBtn.innerHTML = '⎘ &nbsp; Copy IBAN'; }, 2000);
+    }).catch(() => {
+      // Fallback for environments without clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = currentIban;
+      ta.style.position = 'fixed';
+      ta.style.opacity  = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      copyBtn.textContent = '✓  Copied';
+      setTimeout(() => { copyBtn.innerHTML = '⎘ &nbsp; Copy IBAN'; }, 2000);
+    });
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────────
+  bankSelect.addEventListener('change', update);
+  accountInput.addEventListener('input', update);
+
+  // Run once on load to set initial state
+  update();
+</script>
+</body>
+</html>
